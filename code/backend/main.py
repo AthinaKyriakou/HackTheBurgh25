@@ -116,7 +116,7 @@ async def chat(request: ChatRequest):
     # keepCourses = [
     #     course_id_idx_mapping[k]
     #     for k, v in yearSemester.items()
-    #     if (v[0] == 0 or v[0] == student_info["year"])
+    #     if (0 in v[0] or student_info["year"] in v[0])
     #     and (v[1] == student_info["semester"] or v[1] == 0)
     # ]
     # course_summ_embed = course_summ_embed[keepCourses]
