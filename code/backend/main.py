@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-import ollama  # Hypothetical Ollama client (install via pip if available)
+import ollama  
 
 app = FastAPI()
 
@@ -30,7 +30,7 @@ async def chat(request: ChatRequest):
     # Convert messages to a format compatible with Ollama
     messages = [msg.dict() for msg in request.messages]
     # Call Ollama with streaming enabled (adjust based on actual Ollama API)
-    stream = ollama.chat(messages=messages, stream=True)
+    stream = ollama.chat(model="llama3.1", messages=messages, stream=True)    
     
     # Generator function to stream response chunks
     def generate():
