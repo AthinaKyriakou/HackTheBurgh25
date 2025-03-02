@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Form from './components/Form';
 import Conversation from './components/Conversation';
 import './App.css';
+import logo from './logo.png';
 
 const App = () => {
   const [messages, setMessages] = useState([]);
@@ -66,7 +67,16 @@ const App = () => {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>Student Query System</h1>
+        <div className="header-content">
+          <div className="banner-container">
+            <img 
+              src={logo} 
+              alt="Student Query System Logo" 
+              className="header-banner" 
+            />
+          </div>
+          <h1>Student Study Planner</h1>
+        </div>
       </header>
       <main className="app-main">
         <div className="form-section">
