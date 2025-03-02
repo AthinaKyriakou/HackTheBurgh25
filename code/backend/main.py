@@ -226,8 +226,6 @@ async def chat(request: ChatRequest):
         set of all allowed study plans (in list format) obtained by combining the input courses and resecting given constraints
         """
 
-        from itertools import product
-
         # Find all ways to reach the target credit sum using unique courses
         combinations = set()
         def find_combinations(selected, used_letters, remaining_credits):
@@ -242,6 +240,7 @@ async def chat(request: ChatRequest):
                     if choice not in used_letters:  # Avoid repeating letters
                         find_combinations(selected + [choice], used_letters | {choice}, remaining_credits - credit)
         find_combinations([], set(), creditsN)
+
 
         # Filtering study plans by prerequisites and prohibited
         notAllowed = set()
@@ -271,8 +270,7 @@ async def chat(request: ChatRequest):
 
     
     allowedStudyPlans = allowed_plans(student_info['credits'],courses)
-
-    
+    # print("Allowed study plans", allowedStudyPlans)
 
     allowedStudyPlansIdx = [{course for course in plan} for plan in allowedStudyPlans]
     plansSumEmbedding = []
@@ -282,12 +280,12 @@ async def chat(request: ChatRequest):
             sumEmbedding += course_summ_embed[course]
         plansSumEmbedding.append(sumEmbedding)
 
-    print("Debug ---------")
-    print(len(plansSumEmbedding))    
-    print(range(len(plansSumEmbedding)))
+    # print("Debug ---------")
+    # print(len(plansSumEmbedding))    
+    # print(range(len(plansSumEmbedding)))
 
-    print(user_query_embedding.shape)
-    print(plansSumEmbedding[0].shape)
+    # print(user_query_embedding.shape)
+    # print(plansSumEmbedding[0].shape)
 
 
     plansSimilarities = list(map(lambda x: torch.cosine_similarity(x.unsqueeze(0), user_query_embedding.unsqueeze(0)), plansSumEmbedding))
@@ -297,7 +295,7 @@ async def chat(request: ChatRequest):
     studyPlans = [
     {
         "PlanNum": i + 1,
-        "Similarity": plansRanking[i][0],
+        # "Similarity": plansRanking[i][0],
         "Plan": {f'Course{j+1}': course_idx_id_mapping[plansRanking[i][1][j]] for j in range(len(plansRanking[i][1]))}
     }
     for i in range(len(plansRanking))
@@ -305,24 +303,11 @@ async def chat(request: ChatRequest):
 
     print("Study plans ----")
     print(studyPlans)
-    user_preferences = f"Based on the user's interests in {', '.join(user_query_pos)}"
-    if user_query_neg:
-        user_preferences += f" and dislikes in {', '.join(user_query_neg)}"
 
     explanation_prompt = f"""
-    {user_preferences}, the following courses were recommended:
+    Based on the following Study plans, describe the plans to the user. You are only supposed to display your response, do not respond with anything else. Be helpful. 
     
-    {json.dumps(selected_courses, indent=4)}
-
-    For each course, display it in the following format:
-
-    Course Title: <course_title>
-    Course Code: <course_code>
-    Explanation: <explain why the course was recommended>
-    
-    Only display the top-5 courses that were recommended and the details of which was shared above. DO NOT HALLUCINATE AND CREATE NON-EXISTENT COURSES.
-    Do not display similarity scores.
-    Do not say anything apart from what is mentioned above.
+    {json.dumps(studyPlans[:5], indent=4)}
     """
 
     # Call Ollama with streaming enabled (adjust based on actual Ollama API)
