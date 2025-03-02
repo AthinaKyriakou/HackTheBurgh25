@@ -21,24 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # Define data models
 class Message(BaseModel):
     role: str  # "user" or "assistant"
     content: str
 
-
 class ChatRequest(BaseModel):
     messages: List[Message]
-
-class FormData(BaseModel):
-    student_id: str
-    degree: Optional[str] = None
-    semester: int
-    credits: int
-    interests: List[str]
-    additional_info: Optional[str] = None
-
 
 def extract_course_preferences(sentence):
     prompt = f"""
@@ -89,10 +78,15 @@ async def chat(request: ChatRequest):
     message = request.messages[0]
     student_info = extract_student_info_from_message(message)
 
-    course_summ_embed = torch.load("../../data/course_desc/course_summ_embed.pt")
-    course_desc_embed = torch.load("../../data/course_desc/course_desc_embed.pt")
+
+    # check for CUDA
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    course_summ_embed = torch.load("../../data/course_desc/course_summ_embed.pt", map_location=device)
+    course_desc_embed = torch.load("../../data/course_desc/course_desc_embed.pt", map_location=device)
     course_learning_outcomes_embed = torch.load(
-        "../../data/course_desc/course_learning_outcomes_embed.pt"
+        "../../data/course_desc/course_learning_outcomes_embed.pt",
+        map_location=device
     )
     embedder = SentenceTransformer("all-mpnet-base-v2")
 
@@ -103,8 +97,8 @@ async def chat(request: ChatRequest):
     keepCourses = {
         k
         for k, v in yearSemester.items()
-        if (v[0] == 0 or v[0] == student_info.year)
-        and (v[1] == student_info.semester or v[1] == 0)
+        if (v[0] == 0 or v[0] == student_info['year'])
+        and (v[1] == student_info['semester'] or v[1] == 0)
     }
     course_summ_embed = course_summ_embed[keepCourses]
     course_desc_embed = course_desc_embed[keepCourses]
@@ -125,7 +119,7 @@ async def chat(request: ChatRequest):
     print(user_query_pos, user_query_neg)
 
     if len(user_query_pos) == 0:
-        pos_embedding = torch.zeros(768, device="cuda")
+        pos_embedding = torch.zeros(768)
     for idx, query in enumerate(user_query_pos):
 
         if idx == 0:
@@ -134,7 +128,7 @@ async def chat(request: ChatRequest):
             pos_embedding += embedder.encode(query, convert_to_tensor=True)
 
     if len(user_query_neg) == 0:
-        neg_embedding = torch.zeros(768, device="cuda")
+        neg_embedding = torch.zeros(768)
     for idx, query in enumerate(user_query_neg):
         if idx == 0:
             neg_embedding = embedder.encode(query, convert_to_tensor=True)
