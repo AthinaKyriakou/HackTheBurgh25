@@ -213,7 +213,7 @@ async def chat(request: ChatRequest):
 
     course_idx_id_mapping = {value: key for key, value in course_id_idx_mapping.items()}
 
-    def allowed_plans(creditsN: int, courses: dict(), takenCourses: set() = {}, prohibitions: dict() = prohibitions, prerequisites: dict() = prerequisites):
+    def allowed_plans(creditsN: int, courses: dict(), takenCourses: set() = set(), prohibitions: dict() = prohibitions, prerequisites: dict() = prerequisites):
         """
         INPUTS:
         creditsN: integer of credits required for the study plan
@@ -258,29 +258,53 @@ async def chat(request: ChatRequest):
                 if prerequisites[course] not in taking:
                     notAllowed = notAllowed | {plan}
                     break
-        plans = {list(plan) for plan in combinations - notAllowed}
+        plans = {tuple(plan) for plan in combinations - notAllowed}
         return plans
     
     courses = dict()
-    for course in map(top_courses, course_idx_id_mapping):
+    for course in map(lambda x: course_idx_id_mapping[x], top_courses.numpy()):
         if creditsDict[course] in courses.keys():
             courses[creditsDict[course]].append(course_id_idx_mapping[course])
         else:
             courses[creditsDict[course]] = [course_id_idx_mapping[course]]
+
+
     
     allowedStudyPlans = allowed_plans(student_info['credits'],courses)
-    alloewdStudyPlansIdx = [{course_id_idx_mapping[course] for course in plan} for plan in allowedStudyPlans]
+
+    
+
+    allowedStudyPlansIdx = [{course for course in plan} for plan in allowedStudyPlans]
     plansSumEmbedding = []
-    for plan in alloewdStudyPlansIdx:
+    for plan in allowedStudyPlansIdx:
         sumEmbedding = torch.zeros(768, device=device)
         for course in plan:
             sumEmbedding += course_summ_embed[course]
         plansSumEmbedding.append(sumEmbedding)
-    plansSimilarities = [torch.cosine_similarity(plansSumEmbedding[i], user_query_embedding, dim=1) for i in range(len(plansSumEmbedding))]
-    plansRanking = sorted(list(zip(allowedStudyPlans, plansSimilarities)), key=lambda x: x[1], reverse=True)
 
-    studyPlans = [{"PlanNum": i, "Similaritity": plansRanking[i][1], "Plan": {f'Course{j+1}':plansRanking[i][0][j] for j in range(len(plansRanking[0][i]))}} for i in range(len(plansRanking))]
+    print("Debug ---------")
+    print(len(plansSumEmbedding))    
+    print(range(len(plansSumEmbedding)))
 
+    print(user_query_embedding.shape)
+    print(plansSumEmbedding[0].shape)
+
+
+    plansSimilarities = list(map(lambda x: torch.cosine_similarity(x.unsqueeze(0), user_query_embedding.unsqueeze(0)), plansSumEmbedding))
+    
+    plansRanking = sorted(zip(plansSimilarities, allowedStudyPlans), key=lambda x: x[0], reverse=True)
+
+    studyPlans = [
+    {
+        "PlanNum": i + 1,
+        "Similarity": plansRanking[i][0],
+        "Plan": {f'Course{j+1}': course_idx_id_mapping[plansRanking[i][1][j]] for j in range(len(plansRanking[i][1]))}
+    }
+    for i in range(len(plansRanking))
+]
+
+    print("Study plans ----")
+    print(studyPlans)
     user_preferences = f"Based on the user's interests in {', '.join(user_query_pos)}"
     if user_query_neg:
         user_preferences += f" and dislikes in {', '.join(user_query_neg)}"
