@@ -1,0 +1,100 @@
+[
+    {
+        "course_code": "INFR08031",
+        "course_title": "Discrete Mathematics and Probability",
+        "course_summary": "The first part of this course covers fundamental topics in discrete mathematics that underlie many areas of computer science and presents standard mathematical reasoning and proof techniques such as proof by induction. The second part of this course covers discrete and continuous probability theory, including standard definitions and commonly used distributions and their applications.  *This course replaces \"Discrete Mathematics and Mathematical Reasoning\" (INFR08023). from academic year 2020/21*",
+        "course_desc": "The course will cover roughly the following topics:   Block 1: Discrete Mathematics   - Logical equivalences, conditional statements, predicates and quantifiers  - Methods of proof using properties of integers, rational numbers and divisibility   - Set theory, properties of functions and relations, cardinality  - Sequences, sums and products, Induction and Recursion  - Modular arithmetic, primes, greatest common divisors and their applications  - Introductory graph topics    Block 2: Probability Theory  - Counting techniques: product rule, permutations, combinations  - Axioms of probability, sample space, events, De Morgan's Law  - Joint and conditional probability, independence, chain rule, law of total probability, Bayes' Theorem  - Random variables, expectation, variance, covariance  - Common discrete and continuous distributions (e.g., Bernoulli, binomial, Poisson, uniform, exponential, normal)  - Central limit Theorem",
+        "course_credits": 20,
+        "semester": "Semester 1",
+        "assessment": "Written Exam 40 %, Coursework 60 %, Practical Exam 0 %",
+        "prerequisites": {
+            "mandatory": [
+                "Introduction to Linear Algebra (MATH08057)"
+            ],
+            "recommended": [
+                "Informatics 1 - Introduction to Computation (INFR08025)",
+                "Calculus and its Applications (MATH08058)"
+            ]
+        },
+        "prohibited_combinations": [
+            "Probability (MATH08066)",
+            "Proofs and Problem Solving (MATH08059)"
+        ],
+        "other_requirements": "",
+        "learning_outcomes": "use mathematical and logical notation to define and formally reason about mathematical concepts such as sets, relations, functions, and integers, and discrete structures, including proof by induction\nuse graph theoretic terminology and apply concepts from introductory graph theory to model and solve some basic problems in Informatics (e.g., network connectivity, etc.)\nprove elementary arithmetic and algebraic properties of the integers, and modular arithmetic, explain some of their basic applications in Informatics, e.g., to cryptography\ncarry out practical computations with standard concepts from discrete and continuous probability, such as joint and conditional probabilities, expectations, variances, standardization\nrecognize and work with standard discrete and continuous probability distributions and apply them to model and solve concrete problems"
+    },
+    {
+        "course_code": "INFR08020",
+        "course_title": "Informatics 1 - Cognitive Science",
+        "course_summary": "This course is designed as a first introduction to Cognitive Science. It will provide a selective but representative overview of the subject, suitable for all interested students, including students on the Cognitive Science degrees and external students.  The aim of the lecturing team is to present a unified view of the field, based on a computational approach to analysing cognition. The material is organized by cognitive function (e.g., language, vision), rather than by subdiscipline (e.g., psychology, neuroscience).  The course covers language, vision, memory, control and action, and reasoning and generalization. All topics will be presented from a computational point of view, and this perspective will be reinforced by lab sessions in which students implement simple cognitive models.",
+        "course_desc": "The syllabus covers the following topics.  They are listed separately here, but in some cases they will be presented in an interleaved fashion:   1. Language  - cognitive instinct or cognitive technology? - linguistic representations: productivity and reuse - Connectionist and Bayesian models of language  - language acquisition: speech segmentation and word learning - categorization and models of word meaning    2. Reasoning and generalization  - inductive reasoning  - fallacies and (ir)rationality  - models of abstraction and generalisation  - theory formation and the origins of knowledge   3. Fundamentals of cognitive neuroscience  - basic brain anatomy and function  - experimental techniques to record brain activity  - simple models of neurons   4. Vision  - the anatomy of vision, neural correlates of visual perception  - comparison of biological and artificial visual systems   5. Memory and Attention  - types of memory, memory impairments  - computational models of memory   6. Actions and behaviour  - reinforcement learning   Note that this course is intended to give a high-level introduction to the topics listed; subsequent courses (e.g., Computational Cognitive Science) will then provide a more detailed coverage.",
+        "course_credits": 20,
+        "semester": "Semester 2",
+        "assessment": "Written Exam 60 %, Coursework 40 %, Practical Exam 0 %",
+        "prerequisites": {
+            "mandatory": [],
+            "recommended": []
+        },
+        "prohibited_combinations": "",
+        "other_requirements": "",
+        "learning_outcomes": "demonstrate knowledge of key areas of cognitive science, and be able to take an integrated, rather than disciplinary perspective on the field\nevaluate the most important conceptual problems in cognitive science and discuss the solutions that have been proposed\nanalyse and modify simple computational models in a variety of modelling paradigms\nunderstand how cognition and cognitive science is societally situated and the ethical issues raised in researching cognition"
+    },
+    {
+        "course_code": "INFR08025",
+        "course_title": "Informatics 1 - Introduction to Computation",
+        "course_summary": "This course is only available to Informatics students and those on combined Informatics degrees with Maths and PPLS.  **This 20 credit course replaces the two 10 credit courses - 'Informatics 1 - Functional Programming INFR08013' and 'Informatics 1 - Computation and Logic INFR08012' from 2018/19**.  An introduction to concepts of programming, using a functional programming language, and to concepts of computation and specification using finite-state systems and propositional logic. These provide examples of the logical ideas of syntax and semantics and the computational ideas of structure and behaviour. Students learn to specify, model and solve small-scale problems succinctly and at an abstract level.",
+        "course_desc": "An introduction to concepts of programming, using the Haskell functional programming language, and to concepts of computation and specification, using finite-state machines and propositional logic. The use of sets, functions and relations to describe models of logic and computation. Programming using functions and data structures, including lists and trees, equational reasoning, case analysis, recursion, higher-order functions, algebraic and abstract data types. Finite-state machines as a basic model of computation: deterministic and non-deterministic automata; regular expressions; acceptors; structured design of finite state machines. Propositional logic: truth tables; satisfiability; deduction. Applications from different areas will be used to illustrate and motivate the material.",
+        "course_credits": 20,
+        "semester": "Semester 1",
+        "assessment": "Written Exam 0 %, Coursework 100 %, Practical Exam 0 %",
+        "prerequisites": {
+            "mandatory": [],
+            "recommended": []
+        },
+        "prohibited_combinations": "",
+        "other_requirements": "",
+        "learning_outcomes": "use sets, functions and relations to create a simple mathematical model of a real-world situation and use the syntax and semantics of propositional logic to express simple constraints\nsolve simple programming tasks and define appropriate data types. Choose appropriate decompositions of given problems and compose corresponding functional programs from suitable function definitions, including their types\nread and write programs that use basic list processing functions, list comprehensions, case analysis, recursion, and higher-order functions. Understand algorithms for searching and sorting. Document, test and debug programs\nformalise simple propositional reasoning using various methods, including truth tables\ndesign finite state acceptors for particular languages. Use regular expressions to search for simple patterns. Understand the relationship between finite state acceptors and regular expressions"
+    },
+    {
+        "course_code": "INFR08029",
+        "course_title": "Informatics 1 - Object Oriented Programming",
+        "course_summary": "This course is available to Informatics students and those on combined Informatics degrees with Maths and PPLS.  This course presents a conceptual and practical introduction to object oriented programming and software engineering practices, exemplified by Java. As well as providing a grounding in the use of Java, the course will cover general principles of programming in imperative and object oriented frameworks. After completing the course successfully, students will be able to develop programs that support experimentation, simulation and exploration in other parts of the Informatics curriculum (e.g. the capacity to implement, test and observe a particular algorithm).",
+        "course_desc": "An introduction to the concepts of programming and software engineering using an object oriented programming language.",
+        "course_credits": 20,
+        "semester": "Semester 2",
+        "assessment": "Written Exam 0 %, Coursework 100 %, Practical Exam 0 %",
+        "prerequisites": {
+            "mandatory": [
+                "Informatics 1 - Introduction to Computation (INFR08025)"
+            ],
+            "recommended": []
+        },
+        "prohibited_combinations": "",
+        "other_requirements": "",
+        "learning_outcomes": "implement components of an object-oriented program, given a specification, and demonstrate the use of an object-oriented approach to enable group development of larger applications\njustify implementation decisions, compare implementations, and comment on their strengths and weaknesses\ndemonstrate an awareness of good software engineering practice, including the use of version control, testing and readable code\nlocate and use additional sources of information (to include discussion with peers where appropriate) to facilitate independent problem-solving, and reflect on ones own and others contribution to a collaborative learning environment\nplan and organize time, working consistently to a goal"
+    },
+    {
+        "course_code": "INFR08030",
+        "course_title": "Informatics 2 - Foundations of Data Science",
+        "course_summary": "This course introduces students to a core set of knowledge, skills, and ways of thinking that are needed for data science. It brings together several strands: mathematical and computational techniques from statistics and machine learning; practical work with toolchains for data wrangling, analysis, and presentation; critical thinking and writing skills needed to evaluate and present claims; and case studies prompting discussion of the real world implications of data science.",
+        "course_desc": "The course will be delivered through a combination of lectures, workshops, and practical labs; students will be expected to complete both pencil-and-paper and programming-based exercises on their own time as well as during workshops and scheduled labs. Students will complete a data science project to assess their practical and writing skills. Technical topics in the course will be covered in three sections, with indicative topics listed below. Practical aspects of these will use a Python-based ecosystem.   1. Data wrangling and exploratory data analysis  - Working with tabular data  - Descriptive statistics and visualisation  - Linear regression and correlation  - Clustering   2. Supervised machine learning  - Classification  - More on linear regression; logistic regression  - Generalization and regularization   3. Statistical inference  - Randomness, simulation and sampling  - Confidence intervals, law of large numbers  - Randomized studies, hypothesis testing     Interleaved with these topics will be topics focusing on real-world implications (often using case studies), critical thinking, working and writing skills. These may be introduced in lecture but will often include a workshop discussion and/or peer review of written work. Indicative topics include:   A. Implications:  - Where does data come from? (Sample bias, data licensing and privacy issues)  - Visualisation: misleading plots, accessible design  - Machine learning: algorithmic bias and discrimination   B. Thinking, working, and writing:  - Claims and evidence: what can we conclude; analysis of errors  - Reproducibility; programming \"notebooks\" vs modular code  - Scientific communication; structure of a lab report  - Reading and critique of data science articles",
+        "course_credits": 20,
+        "semester": "Full Year",
+        "assessment": "Written Exam 40 %, Coursework 60 %, Practical Exam 0 %",
+        "prerequisites": {
+            "mandatory": [
+                "Informatics 1 - Introduction to Computation (INFR08025)",
+                "Informatics 1 - Object Oriented Programming (INFR08029)",
+                "Introduction to Linear Algebra (MATH08057)"
+            ],
+            "recommended": [
+                "Calculus and its Applications (MATH08058)"
+            ]
+        },
+        "prohibited_combinations": [
+            "Introduction to Data Science (MATH08077)"
+        ],
+        "other_requirements": "",
+        "learning_outcomes": "describe and apply good practices for storing, manipulating, summarising, and visualising data\nuse standard packages and tools for data analysis and describing this analysis, such as Python and LaTeX\napply basic techniques from descriptive and inferential statistics and machine learning; interpret and describe the output from such analyses\ncritically evaluate data-driven methods and claims from case studies, in order to identify and discuss a) potential ethical issues and b) the extent to which stated conclusions are warranted given evidence provided\ncomplete a data science project and write a report describing the question, methods, and results"
+    }
+]
