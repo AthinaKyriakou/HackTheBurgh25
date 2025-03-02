@@ -12,7 +12,8 @@ import pickle
 
 app = FastAPI()
 
-ollama_model_name = "deepseek-r1:1.5b"
+ollama_input_model_name = "llama3.1"
+ollama_final_model_name = "deepseek-r1:1.5b"
 
 # CORS middleware to allow requests from the React frontend
 app.add_middleware(
@@ -53,7 +54,7 @@ def extract_course_preferences(sentence):
     """
 
     response = ollama.chat(
-        model=ollama_model_name, messages=[{"role": "user", "content": prompt}]
+        model=ollama_input_model_name, messages=[{"role": "user", "content": prompt}]
     )
 
     # Extract JSON from response
@@ -110,20 +111,21 @@ async def chat(request: ChatRequest):
 
     # Filtering by year and semester
 
-    with open("../../data/yearSemester.pkl", "rb") as f:
-        yearSemester = pickle.load(f)
-    keepCourses = [
-        course_id_idx_mapping[k]
-        for k, v in yearSemester.items()
-        if (v[0] == 0 or v[0] == student_info["year"])
-        and (v[1] == student_info["semester"] or v[1] == 0)
-    ]
-    course_summ_embed = course_summ_embed[keepCourses]
-    course_desc_embed = course_desc_embed[keepCourses]
-    course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
+    # with open("../../data/yearSemester.pkl", "rb") as f:
+    #     yearSemester = pickle.load(f)
+    # keepCourses = [
+    #     course_id_idx_mapping[k]
+    #     for k, v in yearSemester.items()
+    #     if (v[0] == 0 or v[0] == student_info["year"])
+    #     and (v[1] == student_info["semester"] or v[1] == 0)
+    # ]
+    # course_summ_embed = course_summ_embed[keepCourses]
+    # course_desc_embed = course_desc_embed[keepCourses]
+    # course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
 
+    print(student_info["additionalInfo"])
     # Convert input to pos and neg domains
-    course_preferences = extract_course_preferences(message)
+    course_preferences = extract_course_preferences(student_info["additionalInfo"])
 
     user_query_pos = course_preferences["pos_preferences"]
     user_query_neg = course_preferences["neg_preferences"]
@@ -202,12 +204,11 @@ async def chat(request: ChatRequest):
         for idx in top_5_courses
     ]
 
-    user_preferences = f"Based on the user's interests in {', '.join(user_query_pos)}"
-    if user_query_neg:
-        user_preferences += f" and dislikes in {', '.join(user_query_neg)}"
+    print("************************")
+    print([course["course_title"] for course in selected_courses])
 
     explanation_prompt = f"""
-    {user_preferences}, the following courses were recommended:
+    You should provide a readable summary of a study plan to a student. The following courses were recommended as part of the study plan:
     
     {json.dumps(selected_courses, indent=4)}
 
@@ -215,16 +216,18 @@ async def chat(request: ChatRequest):
 
     Course Title: <course_title>
     Course Code: <course_code>
-    Explanation: <explain why the course was recommended>
+    Explanation: <explain why the course was recommended based on the similarity score, do not display the similarity score>
     
-    Only display the top-5 courses that were recommended and the details of which was shared above. DO NOT HALLUCINATE AND CREATE NON-EXISTENT COURSES.
+    Only respond with the top-5 courses that were recommended and the details of which was shared above.
+    DO NOT INCLUDE YOUR REASONING IN THE RESPONSE. 
+    DO NOT HALLUCINATE AND CREATE NON-EXISTENT COURSES.
     Do not display similarity scores.
     Do not say anything apart from what is mentioned above.
     """
 
     # Call Ollama with streaming enabled (adjust based on actual Ollama API)
     stream = ollama.chat(
-        model=ollama_model_name,
+        model=ollama_final_model_name,
         messages=[{"role": "user", "content": explanation_prompt}],
         stream=True,
     )
