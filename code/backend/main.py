@@ -123,7 +123,7 @@ async def chat(request: ChatRequest):
     # course_desc_embed = course_desc_embed[keepCourses]
     # course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
 
-    print(student_info["additionalInfo"])
+    # print(student_info["additionalInfo"])
     # Convert input to pos and neg domains
     course_preferences = extract_course_preferences(student_info["additionalInfo"])
 
@@ -133,6 +133,10 @@ async def chat(request: ChatRequest):
     print(user_query_pos, user_query_neg)
 
     if len(user_query_pos) == 0:
+        if len(user_query_neg) == 0:
+            pos_embedding = embedder.encode(
+                student_info["additionalInfo"], convert_to_tensor=True, device=device
+            )
         pos_embedding = torch.zeros(768, device=device)
     for idx, query in enumerate(user_query_pos):
 
@@ -196,7 +200,7 @@ async def chat(request: ChatRequest):
         {
             "course_title": course_info[idx]["course_title"],
             "course_code": course_info[idx]["course_code"],
-            "course_summary": course_info[idx]["course_summary"],
+            # "course_summary": course_info[idx]["course_summary"],
             "course_description": course_info[idx]["course_desc"],
             "course_learning_outcomes": course_info[idx]["learning_outcomes"],
             "similarity_score": similarity_scores[idx].item(),
@@ -208,26 +212,30 @@ async def chat(request: ChatRequest):
     print([course["course_title"] for course in selected_courses])
 
     explanation_prompt = f"""
-    You should provide a readable summary of a study plan to a student. The following courses were recommended as part of the study plan:
+    You are a course recommendation assistant. Your task is to provide a *clear and structured explanation* of why the following courses were recommended based on student preferences. 
+
+    Below are the *only* courses that should be included in the response:  
     
     {json.dumps(selected_courses, indent=4)}
 
-    For each course, display it in the following format:
+    ### *Instructions (STRICTLY FOLLOW THESE RULES):*
+    1. Limit the response to 1000 words.  
+    2. *ONLY* use the provided courses. Do *NOT* add, modify, or create new courses.  
+    3. Each course must be displayed in this format:  
 
-    Course Title: <course_title>
-    Course Code: <course_code>
-    Explanation: <explain why the course was recommended based on the similarity score, do not display the similarity score>
-    
-    Only respond with the top-5 courses that were recommended and the details of which was shared above.
-    DO NOT INCLUDE YOUR REASONING IN THE RESPONSE. 
-    DO NOT HALLUCINATE AND CREATE NON-EXISTENT COURSES.
-    Do not display similarity scores.
-    Do not say anything apart from what is mentioned above.
+    - *Course Title:* <course_title>  
+    - *Course Code:* <course_code>   
+    - *Why This Course?: Explain why this course was recommended in **1-2 sentences* using the provided information.  
+
+    4. *DO NOT* include similarity scores, reasoning about the recommendation process, or any additional commentary.  
+    5. Your response should be *concise, factual, and structured exactly as specified*.  
+
+    Now, generate the output following the format above.
     """
 
     # Call Ollama with streaming enabled (adjust based on actual Ollama API)
     stream = ollama.chat(
-        model=ollama_final_model_name,
+        model=ollama_input_model_name,
         messages=[{"role": "user", "content": explanation_prompt}],
         stream=True,
     )
