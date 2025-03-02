@@ -12,6 +12,8 @@ import pickle
 
 app = FastAPI()
 
+ollama_model_name = "llama3.1"
+
 # CORS middleware to allow requests from the React frontend
 app.add_middleware(
     CORSMiddleware,
@@ -48,7 +50,7 @@ def extract_course_preferences(sentence):
     """
 
     response = ollama.chat(
-        model="llama3.1", messages=[{"role": "user", "content": prompt}]
+        model=ollama_model_name, messages=[{"role": "user", "content": prompt}]
     )
 
     # Extract JSON from response
@@ -92,23 +94,23 @@ async def chat(request: ChatRequest):
 
     # Filtering by year and semester
 
-    with open("../../data/yearSemester.pkl", "rb") as f:
-        yearSemester = pickle.load(f)
-    keepCourses = {
-        k
-        for k, v in yearSemester.items()
-        if (v[0] == 0 or v[0] == student_info['year'])
-        and (v[1] == student_info['semester'] or v[1] == 0)
-    }
-    course_summ_embed = course_summ_embed[keepCourses]
-    course_desc_embed = course_desc_embed[keepCourses]
-    course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
+    # with open("../../data/yearSemester.pkl", "rb") as f:
+    #     yearSemester = pickle.load(f)
+    # keepCourses = {
+    #     k
+    #     for k, v in yearSemester.items()
+    #     if (v[0] == 0 or v[0] == student_info['year'])
+    #     and (v[1] == student_info['semester'] or v[1] == 0)
+    # }
+    # course_summ_embed = course_summ_embed[keepCourses]
+    # course_desc_embed = course_desc_embed[keepCourses]
+    # course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
 
-    with open(
-        "../../data/course_desc/informatics_course_info.json",
-        "r",
-    ) as file:
-        course_info = json.load(file)
+    # with open(
+    #     "../../data/course_desc/informatics_course_info.json",
+    #     "r",
+    # ) as file:
+    #     course_info = json.load(file)
 
     # Convert input to pos and neg domains
     course_preferences = extract_course_preferences(message)
@@ -200,7 +202,7 @@ async def chat(request: ChatRequest):
 
     # Call Ollama with streaming enabled (adjust based on actual Ollama API)
     stream = ollama.chat(
-        model="llama3.1",
+        model=ollama_model_name,
         messages=[{"role": "user", "content": explanation_prompt}],
         stream=True,
     )
