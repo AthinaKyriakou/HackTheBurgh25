@@ -12,7 +12,7 @@ import pickle
 
 app = FastAPI()
 
-ollama_model_name = "llama3.1"
+ollama_model_name = "deepseek-r1:1.5b"
 
 # CORS middleware to allow requests from the React frontend
 app.add_middleware(
@@ -106,11 +106,11 @@ async def chat(request: ChatRequest):
     # course_desc_embed = course_desc_embed[keepCourses]
     # course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
 
-    # with open(
-    #     "../../data/course_desc/informatics_course_info.json",
-    #     "r",
-    # ) as file:
-    #     course_info = json.load(file)
+    with open(
+        "../../data/course_desc/informatics_course_info.json",
+        "r",
+    ) as file:
+        course_info = json.load(file)
 
     # Convert input to pos and neg domains
     course_preferences = extract_course_preferences(message)
