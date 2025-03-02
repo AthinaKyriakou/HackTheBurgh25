@@ -23,13 +23,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Define data models
 class Message(BaseModel):
     role: str  # "user" or "assistant"
     content: str
 
+
 class ChatRequest(BaseModel):
     messages: List[Message]
+
 
 def extract_course_preferences(sentence):
     prompt = f"""
@@ -73,6 +76,7 @@ def extract_student_info_from_message(message):
         except json.JSONDecodeError:
             return {"year": 0, "semester": 0, "major": "", "minor": "", "interests": ""}
 
+
 # Chat endpoint to handle form submissions and feedback
 @app.post("/chat")
 async def chat(request: ChatRequest):
@@ -80,37 +84,43 @@ async def chat(request: ChatRequest):
     message = request.messages[0]
     student_info = extract_student_info_from_message(message)
 
-
     # check for CUDA
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    course_summ_embed = torch.load("../../data/course_desc/course_summ_embed.pt", map_location=device)
-    course_desc_embed = torch.load("../../data/course_desc/course_desc_embed.pt", map_location=device)
+    course_summ_embed = torch.load(
+        "../../data/course_desc/course_summ_embed.pt", map_location=device
+    )
+    course_desc_embed = torch.load(
+        "../../data/course_desc/course_desc_embed.pt", map_location=device
+    )
     course_learning_outcomes_embed = torch.load(
-        "../../data/course_desc/course_learning_outcomes_embed.pt",
-        map_location=device
+        "../../data/course_desc/course_learning_outcomes_embed.pt", map_location=device
     )
     embedder = SentenceTransformer("all-mpnet-base-v2")
-
-    # Filtering by year and semester
-
-    # with open("../../data/yearSemester.pkl", "rb") as f:
-    #     yearSemester = pickle.load(f)
-    # keepCourses = {
-    #     k
-    #     for k, v in yearSemester.items()
-    #     if (v[0] == 0 or v[0] == student_info['year'])
-    #     and (v[1] == student_info['semester'] or v[1] == 0)
-    # }
-    # course_summ_embed = course_summ_embed[keepCourses]
-    # course_desc_embed = course_desc_embed[keepCourses]
-    # course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
 
     with open(
         "../../data/course_desc/informatics_course_info.json",
         "r",
     ) as file:
         course_info = json.load(file)
+
+    course_id_idx_mapping = {}
+    for idx, course in enumerate(course_info):
+        course_id_idx_mapping[course["course_code"]] = idx
+
+    # Filtering by year and semester
+
+    with open("../../data/yearSemester.pkl", "rb") as f:
+        yearSemester = pickle.load(f)
+    keepCourses = [
+        course_id_idx_mapping[k]
+        for k, v in yearSemester.items()
+        if (v[0] == 0 or v[0] == student_info["year"])
+        and (v[1] == student_info["semester"] or v[1] == 0)
+    ]
+    course_summ_embed = course_summ_embed[keepCourses]
+    course_desc_embed = course_desc_embed[keepCourses]
+    course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
 
     # Convert input to pos and neg domains
     course_preferences = extract_course_preferences(message)
@@ -121,40 +131,52 @@ async def chat(request: ChatRequest):
     print(user_query_pos, user_query_neg)
 
     if len(user_query_pos) == 0:
-        pos_embedding = torch.zeros(768)
+        pos_embedding = torch.zeros(768, device=device)
     for idx, query in enumerate(user_query_pos):
 
         if idx == 0:
-            pos_embedding = embedder.encode(query, convert_to_tensor=True)
+            pos_embedding = embedder.encode(
+                query, convert_to_tensor=True, device=device
+            )
         else:
-            pos_embedding += embedder.encode(query, convert_to_tensor=True)
+            pos_embedding += embedder.encode(
+                query, convert_to_tensor=True, device=device
+            )
 
     if len(user_query_neg) == 0:
-        neg_embedding = torch.zeros(768)
+        neg_embedding = torch.zeros(768, device=device)
     for idx, query in enumerate(user_query_neg):
         if idx == 0:
-            neg_embedding = embedder.encode(query, convert_to_tensor=True)
+            neg_embedding = embedder.encode(
+                query, convert_to_tensor=True, device=device
+            )
         else:
-            neg_embedding += embedder.encode(query, convert_to_tensor=True)
+            neg_embedding += embedder.encode(
+                query, convert_to_tensor=True, device=device
+            )
 
     user_query_embedding = pos_embedding - neg_embedding
+    user_query_embedding = user_query_embedding.to(device)
 
+    print(type(course_summ_embed), course_summ_embed.get_device())
+    print(type(user_query_embedding), user_query_embedding.get_device())
     course_summ_similarity = torch.cosine_similarity(
         course_summ_embed, user_query_embedding, dim=1
     )
-
     course_desc_similarity = torch.cosine_similarity(
-        course_desc_embed, user_query_embedding, dim=1
+        course_desc_embed,
+        user_query_embedding,
+        dim=1,
     )
-
-    # course_learning_outcomes_similarity = torch.cosine_similarity(
-    #     course_learning_outcomes_embed, user_query_embedding, dim=1
-    # )
-
+    course_learning_outcomes_similarity = torch.cosine_similarity(
+        course_learning_outcomes_embed,
+        user_query_embedding,
+        dim=1,
+    )
     similarity_scores = (
         course_summ_similarity
         + course_desc_similarity
-        # + course_learning_outcomes_similarity
+        + course_learning_outcomes_similarity
     )
 
     top_5_courses = torch.topk(similarity_scores, 5).indices
