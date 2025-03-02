@@ -25,15 +25,15 @@ const Form = ({ onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const formattedMessage = `
-Student ID: ${studentId}
-Degree: ${degree?.value || 'Not specified'}
-Semester: ${semester}
-Credits: ${credits}
-Interests: ${interests.map(i => i.value).join(', ') || 'None'}
-Additional Info: ${freeText || 'None'}
-    `.trim();
-    onSubmit(formattedMessage);
+    const formData = {
+      studentId,
+      degree: degree?.value || 'Not specified',
+      semester,
+      credits,
+      interests: interests.map(i => i.value),
+      additionalInfo: freeText || 'None'
+    };
+    onSubmit(JSON.stringify(formData));
   };
 
   return (
