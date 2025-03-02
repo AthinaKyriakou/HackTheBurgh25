@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Form from './components/Form';
 import Conversation from './components/Conversation';
-import './App.css'; // Optional: for styling
+import './App.css';
 
 const App = () => {
   const [messages, setMessages] = useState([]);
@@ -9,18 +9,17 @@ const App = () => {
 
   const handleFormSubmit = async (formattedMessage) => {
     const userMessage = { role: 'user', content: formattedMessage };
-    setMessages([userMessage]); // Reset conversation for new form submission
+    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
-    await sendMessage([userMessage]);
+    await sendMessage([...messages, userMessage]);
     setIsLoading(false);
   };
 
   const handleFeedbackSubmit = async (feedbackText) => {
     const feedbackMessage = { role: 'user', content: feedbackText };
-    const updatedMessages = [...messages, feedbackMessage];
-    setMessages(updatedMessages);
+    setMessages((prev) => [...prev, feedbackMessage]);
     setIsLoading(true);
-    await sendMessage(updatedMessages);
+    await sendMessage([...messages, feedbackMessage]);
     setIsLoading(false);
   };
 
@@ -31,35 +30,56 @@ const App = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: messagesToSend }),
       });
-
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-
+      
+      if (!response.ok) throw new Error('Network response was not ok');
+      
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = { role: 'assistant', content: '' };
-      setMessages([...messagesToSend, assistantMessage]);
-
+      
+      // Add the initial empty assistant message to the state
+      setMessages((prevMessages) => [...messagesToSend, assistantMessage]);
+      
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        
         const chunk = decoder.decode(value, { stream: true });
         assistantMessage.content += chunk;
-        setMessages([...messagesToSend, { ...assistantMessage }]);
+        
+        // Update the message state with the new content
+        setMessages((prevMessages) => {
+          const updatedMessages = [...prevMessages];
+          updatedMessages[updatedMessages.length - 1] = { ...assistantMessage };
+          return updatedMessages;
+        });
       }
     } catch (error) {
       console.error('Error:', error);
-      setMessages([...messagesToSend, { role: 'assistant', content: 'Error occurred' }]);
+      setMessages((prevMessages) => [
+        ...messagesToSend, 
+        { role: 'assistant', content: 'Error occurred while processing your request. Please try again.' }
+      ]);
     }
   };
 
   return (
-    <div className="App">
-      <h1>Student Query System</h1>
-      <Form onSubmit={handleFormSubmit} />
-      <Conversation messages={messages} onFeedbackSubmit={handleFeedbackSubmit} />
-      {isLoading && <div className="spinner">Loading...</div>}
+    <div className="app-container">
+      <header className="app-header">
+        <h1>Student Query System</h1>
+      </header>
+      <main className="app-main">
+        <div className="form-section">
+          <Form onSubmit={handleFormSubmit} />
+        </div>
+        <div className="chat-section">
+          <Conversation messages={messages} onFeedbackSubmit={handleFeedbackSubmit} />
+          {isLoading && <div className="loading-indicator">
+            <div className="spinner"></div>
+            <span>Processing your request...</span>
+          </div>}
+        </div>
+      </main>
     </div>
   );
 };
