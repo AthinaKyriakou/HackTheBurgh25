@@ -12,3 +12,6 @@ uvicorn main:app --reload --port 8000
 
 ### Ollama
 ollama pull llama3.1 & ollama serve
+
+## Pipeline:
+![](Pipeline.png)
