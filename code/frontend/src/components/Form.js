@@ -44,10 +44,10 @@ const Form = ({ onSubmit }) => {
 
   return (
     <form className="modern-form" onSubmit={handleSubmit}>
-      <h2>Year of Study</h2>
+      <h2>Student Information</h2>
       
       <div className="form-group">
-        <label htmlFor="year">Student ID:</label>
+        <label htmlFor="year">Year of Study:</label>
         <select 
           id="year"
           value={year} 
