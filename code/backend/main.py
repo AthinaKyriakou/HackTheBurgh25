@@ -268,8 +268,6 @@ async def chat(request: ChatRequest):
             courses[creditsDict[course]].append(course_id_idx_mapping[course])
         else:
             courses[creditsDict[course]] = [course_id_idx_mapping[course]]
-
-
     
     allowedStudyPlans = allowed_plans(student_info['credits'],courses)
     # print("Allowed study plans", allowedStudyPlans)
@@ -300,29 +298,114 @@ async def chat(request: ChatRequest):
         # "Similarity": plansRanking[i][0],
         "Plan": {f'Course{j+1}': course_idx_id_mapping[plansRanking[i][1][j]] for j in range(len(plansRanking[i][1]))}
     }
-    for i in range(len(plansRanking))
-]
+    for i in range(len(plansRanking))]
+
+    courses_1 = (course_idx_id_mapping[plansRanking[0][1][j]] for j in range(len(plansRanking[0][1])))
+    courses_2 = (course_idx_id_mapping[plansRanking[1][1][j]] for j in range(len(plansRanking[1][1])))
+
+    courses_1 = map(lambda a: filter(lambda x: x['course_code'] == a[1], selected_courses), courses_1)
+    courses_2 = map(lambda a: filter(lambda x: x['course_code'] == a[1], selected_courses), courses_2)
+
+    # selected_courses = [
+    #     {
+    #         "course_title": course_info[idx]["course_title"],
+    #         "course_code": course_info[idx]["course_code"],
+    #         "course_summary": course_info[idx]["course_summary"],
+    #         #"course_description": course_info[idx]["course_desc"],
+    #         "course_learning_outcomes": course_info[idx]["learning_outcomes"],
+    #         "similarity_score": similarity_scores[idx].item(),
+    #     }
+    #     for idx in top_5_courses
+    # ]
 
     print("Study plans ----")
     print(studyPlans)
 
-    explanation_prompt = f"""
-    Based on the following Study plans, describe the plans to the user. You are only supposed to display your response, do not respond with anything else. Be helpful. 
-    
-    {json.dumps(studyPlans[:5], indent=4)}
+    explanation_prompt_1 = f"""
+    You are a course recommendation assistant. 
+    Your task is to provide a clear and structured explanation of why the following courses were recommended based on student preferences. 
+    There is a similarity score for each course. This score computes the similarity between the student's interests, as described in the message, and the course_summary.
+
+    ### *Student's Input*
+    The student's message is:
+    "{message.content}"
+
+    ### *Student's Recommended Courses*
+    The following courses were selected based on their relevance to the student's interests:
+    {json.dumps(courses_1, indent=4)}
+
+    ### Instructions (STRICTLY FOLLOW THESE RULES):  
+    1. ONLY use the provided courses. Do NOT add, modify, or create new courses.  
+    2. Each course must be displayed in this format:  
+
+    - Course Title: <course_title>  
+    - Course Code: <course_code>  
+    - Why This Course?: Explain why this course was recommended in **1-2 sentences using the similarity score, the message and the course_summary.  
+
+    3. DO NOT include similarity scores, reasoning about the recommendation process, or any additional commentary.  
+    4. Your response should be concise, factual, and structured exactly as specified. 
+    5. Limit the answer to 100 words. 
+
+    Now, generate the output following the format above.
+    """
+
+    explanation_prompt_2 = f"""
+    You are a course recommendation assistant. 
+    Your task is to provide a clear and structured explanation of why the following courses were recommended based on student preferences. 
+    There is a similarity score for each course. This score computes the similarity between the student's interests, as described in the message, and the course_summary.
+
+    ### *Student's Input*
+    The student's message is:
+    "{message.content}"
+
+    ### *Student's Recommended Courses*
+    The following courses were selected based on their relevance to the student's interests:
+    {json.dumps(courses_2, indent=4)}
+
+    ### Instructions (STRICTLY FOLLOW THESE RULES):  
+    1. ONLY use the provided courses. Do NOT add, modify, or create new courses.  
+    2. Each course must be displayed in this format:  
+
+    - Course Title: <course_title>  
+    - Course Code: <course_code>  
+    - Why This Course?: Explain why this course was recommended in **1-2 sentences using the similarity score, the message and the course_summary.  
+
+    3. DO NOT include similarity scores, reasoning about the recommendation process, or any additional commentary.  
+    4. Your response should be concise, factual, and structured exactly as specified. 
+    5. Limit the answer to 100 words. 
+
+    Now, generate the output following the format above.
     """
 
     # Call Ollama with streaming enabled (adjust based on actual Ollama API)
-    stream = ollama.chat(
+    stream_1 = ollama.chat(
         model=ollama_final_model_name,
-        messages=[{"role": "user", "content": explanation_prompt}],
+        messages=[{"role": "user", "content": explanation_prompt_1}],
+        stream=True,
+    )
+
+    stream_2 = ollama.chat(
+        model=ollama_final_model_name,
+        messages=[{"role": "user", "content": explanation_prompt_2}],
         stream=True,
     )
 
     # Generator function to stream response chunks
     def generate():
-        for chunk in stream:
-            # Assuming Ollama returns chunks with 'message' and 'content'
-            yield chunk["message"]["content"]
+        in_think_tag = False
+        yield "Here are some recommended study plans that I came up with :) :\n"
+        for stream in [stream_1, stream_2]:
+            for chunk in stream:
+                content = chunk["message"]["content"]
+                # Check for <think> tags and filter out text between them
+                if "<think>" in content:
+                    in_think_tag = True
+                    content = content.split("<think>")[0]
+                if "</think>" in content:
+                    in_think_tag = False
+                    content = content.split("</think>")[-1]
+                if not in_think_tag:
+                    yield content
+            yield "\n\n\nNext plan:\n"
 
     return StreamingResponse(generate(), media_type="text/plain")
