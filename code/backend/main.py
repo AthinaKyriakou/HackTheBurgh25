@@ -128,8 +128,6 @@ async def chat(request: ChatRequest):
     user_query_pos = course_preferences["pos_preferences"]
     user_query_neg = course_preferences["neg_preferences"]
 
-    print(user_query_pos, user_query_neg)
-
     if len(user_query_pos) == 0:
         pos_embedding = torch.zeros(768, device=device)
     for idx, query in enumerate(user_query_pos):
@@ -179,7 +177,7 @@ async def chat(request: ChatRequest):
         + course_learning_outcomes_similarity
     )
 
-    top_5_courses = torch.topk(similarity_scores, 5).indices
+    top_courses = torch.topk(similarity_scores, 20).indices
 
     # print(test_case)
     # i = 0
@@ -199,8 +197,89 @@ async def chat(request: ChatRequest):
             "course_learning_outcomes": course_info[idx]["learning_outcomes"],
             "similarity_score": similarity_scores[idx].item(),
         }
-        for idx in top_5_courses
+        for idx in top_courses
     ]
+
+    # Finding all courses combinations with specific total credits
+    # Mind that the courses dictionary should contain only courses which respect:
+    # most-preferences-fitting not-taken courses not prohibited by taken courses with the key-specified number of credits
+
+    with open("../../data/prerequisites.pkl", "rb") as f:
+        prerequisites = pickle.load(f)
+    with open("../../data/prohibitions.pkl", "rb") as f:
+        prohibitions = pickle.load(f)
+    with open("../../data/credits.pkl", "rb") as f:
+        creditsDict = pickle.load(f)
+
+    course_idx_id_mapping = {value: key for key, value in course_id_idx_mapping.items()}
+
+    def allowed_plans(creditsN: int, courses: dict(), takenCourses: set() = {}, prohibitions: dict() = prohibitions, prerequisites: dict() = prerequisites):
+        """
+        INPUTS:
+        creditsN: integer of credits required for the study plan
+        courses: dictionary with number of credits (integers) as keys and courses selected for similarity and lists of best query-aligning courses with that number of credits
+        takenCourses: set of courses already taken by the student
+        prohibitions: dictionary with courses IDs (strings) as keys and sets of other courses IDs prohibited by that key-course
+        prerequisites: dictionary with courses IDs (strings) as keys and sets of other courses IDs required (mandatory prerequisites) to take that key-course
+
+        OUTPUT:
+        set of all allowed study plans (in list format) obtained by combining the input courses and resecting given constraints
+        """
+
+        from itertools import product
+
+        # Find all ways to reach the target credit sum using unique courses
+        combinations = set()
+        def find_combinations(selected, used_letters, remaining_credits):
+            if remaining_credits == 0:
+                combinations.add(frozenset(selected))  # Use frozenset to make order irrelevant
+                return
+            if remaining_credits < 0:
+                return
+
+            for credit, subjects in courses.items():
+                for choice in subjects:
+                    if choice not in used_letters:  # Avoid repeating letters
+                        find_combinations(selected + [choice], used_letters | {choice}, remaining_credits - credit)
+        find_combinations([], set(), creditsN)
+
+        # Filtering study plans by prerequisites and prohibited
+        notAllowed = set()
+        for plan in combinations:
+            for course in plan & set(prohibitions.keys()):
+                if prohibitions[course] in plan:
+                    notAllowed = notAllowed | {plan}
+                    break
+        combinations = combinations - notAllowed
+        notAllowed = set()
+        for plan in combinations:
+            taking = plan | takenCourses
+            for course in plan & set(prerequisites.keys()):
+                if prerequisites[course] not in taking:
+                    notAllowed = notAllowed | {plan}
+                    break
+        plans = {list(plan) for plan in combinations - notAllowed}
+        return plans
+    
+    courses = dict()
+    for course in map(top_courses, course_idx_id_mapping):
+        if creditsDict[course] in courses.keys():
+            courses[creditsDict[course]].append(course_id_idx_mapping[course])
+        else:
+            courses[creditsDict[course]] = [course_id_idx_mapping[course]]
+    
+    allowedStudyPlans = allowed_plans(student_info['credits'],courses)
+    alloewdStudyPlansIdx = [{course_id_idx_mapping[course] for course in plan} for plan in allowedStudyPlans]
+    plansSumEmbedding = []
+    for plan in alloewdStudyPlansIdx:
+        sumEmbedding = torch.zeros(768, device=device)
+        for course in plan:
+            sumEmbedding += course_summ_embed[course]
+        plansSumEmbedding.append(sumEmbedding)
+    plansSimilarities = [torch.cosine_similarity(plansSumEmbedding[i], user_query_embedding, dim=1) for i in range(len(plansSumEmbedding))]
+    plansRanking = sorted(list(zip(allowedStudyPlans, plansSimilarities)), key=lambda x: x[1], reverse=True)
+
+    studyPlans = [{"PlanNum": i, "Similaritity": plansRanking[i][1], "Plan": {f'Course{j+1}':plansRanking[i][0][j] for j in range(len(plansRanking[0][i]))}} for i in range(len(plansRanking))]
 
     user_preferences = f"Based on the user's interests in {', '.join(user_query_pos)}"
     if user_query_neg:
