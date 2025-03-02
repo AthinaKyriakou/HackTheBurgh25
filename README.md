@@ -1,14 +1,14 @@
-File Description:
+# UoE Study Plan Assistant
 
-* data/no_sent/course_info.json: the scrapped course information
+The present AI-based model can help students in defining the set of courses to attend during any specific semester of their career, based on their background, interests and skills. The UI allows to define their preferences via user-friendly filters and natural language interaction.
 
+## To run the code (from relevant diretory):
 
-Data without sentiment analysis:
-* data/no_sent/course_embed.json: the course embeddings 
-* data/no_sent/course_keywords.json: the main topics of courses (to be used by the UI)
-* data/no_sent/course_similarity.json: the course similarities 
-* data/no_sent/course_clusters.json: the course clusters
+### Frontend
+npm start
 
+### Backend
+uvicorn main:app --reload --port 8000
 
-Data with sentiment analysis:
-* data/with_sents/course_embed_pos_sent.json: the course embeddings 
+### Ollama
+ollama pull llama3.1 & ollama serve
