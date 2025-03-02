@@ -31,11 +31,11 @@ async def chat(request: ChatRequest):
     messages = [msg.dict() for msg in request.messages]
     # Call Ollama with streaming enabled (adjust based on actual Ollama API)
     stream = ollama.chat(model="llama3.1", messages=messages, stream=True)    
-    
+
     # Generator function to stream response chunks
     def generate():
         for chunk in stream:
             # Assuming Ollama returns chunks with 'message' and 'content'
-            yield chunk['message']['content'] + "\n"
+            yield chunk['message']['content']
     
     return StreamingResponse(generate(), media_type="text/plain")

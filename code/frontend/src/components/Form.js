@@ -34,13 +34,6 @@ Interests: ${interests.map(i => i.value).join(', ') || 'None'}
 Additional Info: ${freeText || 'None'}
     `.trim();
     onSubmit(formattedMessage);
-    // Reset form (optional)
-    setStudentId('');
-    setDegree(null);
-    setSemester('1');
-    setCredits(0);
-    setInterests([]);
-    setFreeText('');
   };
 
   return (
