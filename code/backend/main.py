@@ -8,6 +8,7 @@ import re
 import json
 import torch
 from sentence_transformers import SentenceTransformer
+import pickle
 
 app = FastAPI()
 
@@ -33,19 +34,19 @@ class ChatRequest(BaseModel):
 
 def extract_course_preferences(sentence):
     prompt = f"""
-    Extract preferences of domains/courses from the following sentence:
+    Extract preferences of the user from the following sentence:
 
     "{sentence}"
 
-    Don't provide the python code to do this. Don't infer anything from external knowledge. Directly output a JSON object with two keys: 'pos_domains' and 'neg_domains'.
-    'pos_domains' should be a list of domains/courses the user likes.
-    'neg_domains' should be a list of domains/courses the user dislikes.
+    Don't provide the python code to do this. Don't infer anything from external knowledge. Directly output a JSON object with two keys: 'pos_preferences' and 'neg_preferences'.
+    'pos_preferences' should be a list of domains/courses the user likes and any other positive preference condition (phrase) the user specifies.
+    'neg_preferences' should be a list of domains/courses the user dislikes and any other negative preference condition the user specifies.
     Make the decision solely based on the input sentence.
 
     Example Output:
     {{
-        "pos_domains": [<list of domains/courses the user likes>],
-        "neg_domains": [<list of domains/courses the user dislikes>]
+        "pos_preferences": [<list of domains/courses the user likes and any other positive preference condition (phrase) the user specifies>],
+        "neg_preferences": [<list of domains/courses the user dislikes and any other negative preference condition the user specifies.>]
     }}
     """
 
@@ -61,9 +62,21 @@ def extract_course_preferences(sentence):
             parsed_data = json.loads(json_response)
             return parsed_data
         except json.JSONDecodeError:
-            return {"pos_domains": [], "neg_domains": []}
+            return {"pos_preferences": [], "neg_preferences": []}
 
-    return {"pos_domains": [], "neg_domains": []}
+    return {"pos_preferences": [], "neg_preferences": []}
+
+
+def extract_student_info_from_message(response):
+    match = re.search(r"\{.*\}", response["message"]["content"], re.DOTALL)
+    if match:
+        json_response = match.group(0)
+        try:
+            parsed_data = json.loads(json_response)
+            return parsed_data
+        except json.JSONDecodeError:
+            return {"year": 0, "semester": 0, "major": "", "minor": "", "interests": ""}
+    return {"year": 0, "semester": 0, "major": "", "minor": "", "interests": ""}
 
 
 # Chat endpoint to handle form submissions and feedback
@@ -71,22 +84,33 @@ def extract_course_preferences(sentence):
 async def chat(request: ChatRequest):
     # Convert messages to a format compatible with Ollama
     message = request.messages[0].json()
-    print(message)
     # message = {"role": message["role"], "content": message["Additional Info"]}
+    print("---", message)
+    student_info = extract_student_info_from_message(message)
 
-    course_summ_embed = torch.load(
-        "/home/gokul/gigs/hacktheburgh/data/course_desc/course_summ_embed.pt"
-    )
-    course_desc_embed = torch.load(
-        "/home/gokul/gigs/hacktheburgh/data/course_desc/course_desc_embed.pt"
-    )
+    course_summ_embed = torch.load("../../data/course_desc/course_summ_embed.pt")
+    course_desc_embed = torch.load("../../data/course_desc/course_desc_embed.pt")
     course_learning_outcomes_embed = torch.load(
-        "/home/gokul/gigs/hacktheburgh/data/course_desc/course_learning_outcomes_embed.pt"
+        "../../data/course_desc/course_learning_outcomes_embed.pt"
     )
     embedder = SentenceTransformer("all-mpnet-base-v2")
 
+    # Filtering by year and semester
+
+    with open("../../data/yearSemester.pkl", "rb") as f:
+        yearSemester = pickle.load(f)
+    keepCourses = {
+        k
+        for k, v in yearSemester.items()
+        if (v[0] == 0 or v[0] == student_info.year)
+        and (v[1] == student_info.semester or v[1] == 0)
+    }
+    course_summ_embed = course_summ_embed[keepCourses]
+    course_desc_embed = course_desc_embed[keepCourses]
+    course_learning_outcomes_embed = course_learning_outcomes_embed[keepCourses]
+
     with open(
-        "/home/gokul/gigs/hacktheburgh/data/course_desc/informatics_course_info.json",
+        "../../data/course_desc/informatics_course_info.json",
         "r",
     ) as file:
         course_info = json.load(file)
@@ -94,11 +118,10 @@ async def chat(request: ChatRequest):
     # Convert input to pos and neg domains
     course_preferences = extract_course_preferences(message)
 
-    user_query_pos = course_preferences["pos_domains"]
-    user_query_neg = course_preferences["neg_domains"]
+    user_query_pos = course_preferences["pos_preferences"]
+    user_query_neg = course_preferences["neg_preferences"]
 
-    print(user_query_pos)
-    print(user_query_neg)
+    print(user_query_pos, user_query_neg)
 
     if len(user_query_pos) == 0:
         pos_embedding = torch.zeros(768, device="cuda")
@@ -127,14 +150,14 @@ async def chat(request: ChatRequest):
         course_desc_embed, user_query_embedding, dim=1
     )
 
-    course_learning_outcomes_similarity = torch.cosine_similarity(
-        course_learning_outcomes_embed, user_query_embedding, dim=1
-    )
+    # course_learning_outcomes_similarity = torch.cosine_similarity(
+    #     course_learning_outcomes_embed, user_query_embedding, dim=1
+    # )
 
     similarity_scores = (
         course_summ_similarity
         + course_desc_similarity
-        + course_learning_outcomes_similarity
+        # + course_learning_outcomes_similarity
     )
 
     top_5_courses = torch.topk(similarity_scores, 5).indices
@@ -150,10 +173,11 @@ async def chat(request: ChatRequest):
 
     selected_courses = [
         {
-            "title": course_info[idx]["course_title"],
-            "summary": course_info[idx]["course_summary"],
-            "description": course_info[idx]["course_desc"],
-            "learning_outcomes": course_info[idx]["learning_outcomes"],
+            "course_title": course_info[idx]["course_title"],
+            "course_code": course_info[idx]["course_code"],
+            "course_summary": course_info[idx]["course_summary"],
+            "course_description": course_info[idx]["course_desc"],
+            "course_learning_outcomes": course_info[idx]["learning_outcomes"],
             "similarity_score": similarity_scores[idx].item(),
         }
         for idx in top_5_courses
@@ -168,8 +192,13 @@ async def chat(request: ChatRequest):
     
     {json.dumps(selected_courses, indent=4)}
 
-    For each course, first display its course code and title, and then explain why it was chosen based on the user's preferences.
-    Display all of the courses provide above.
+    For each course, display it in the following format:
+
+    Course Title: <course_title>
+    Course Code: <course_code>
+    Explanation: <explain why the course was recommended>
+    
+    Only display the top-5 courses that were recommended and the details of which was shared above. DO NOT HALLUCINATE AND CREATE NON-EXISTENT COURSES.
     Do not display similarity scores.
     Do not say anything apart from what is mentioned above.
     """
