@@ -49,13 +49,16 @@ body {
   flex: 1;
   max-width: 400px;
   overflow-y: auto; /* Allow form to scroll if needed */
+  display: flex;
+  flex-direction: column;
 }
+
 
 .modern-form {
   background: white;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 6px rgba(0, 0, 0, 0.1); 
   display: flex;
   flex-direction: column;
   gap: 15px;
@@ -86,13 +89,13 @@ body {
   transition: border-color 0.3s;
 }
 
-.form-group input[type="text"]:focus,
+/* .form-group input[type="text"]:focus,
 .form-group textarea:focus,
 .form-group select:focus {
   border-color: #1a73e8;
   outline: none;
   box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
-}
+} */
 
 .form-group input[type="range"] {
   width: 100%;

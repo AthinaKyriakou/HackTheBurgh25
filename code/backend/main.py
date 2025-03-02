@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import ollama
 import re
 import json
@@ -30,6 +30,14 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: List[Message]
+
+class FormData(BaseModel):
+    student_id: str
+    degree: Optional[str] = None
+    semester: int
+    credits: int
+    interests: List[str]
+    additional_info: Optional[str] = None
 
 
 def extract_course_preferences(sentence):
@@ -67,25 +75,18 @@ def extract_course_preferences(sentence):
     return {"pos_preferences": [], "neg_preferences": []}
 
 
-def extract_student_info_from_message(response):
-    match = re.search(r"\{.*\}", response["message"]["content"], re.DOTALL)
-    if match:
-        json_response = match.group(0)
+def extract_student_info_from_message(message):
+    if message.role == "user":
         try:
-            parsed_data = json.loads(json_response)
-            return parsed_data
+            return json.loads(message.content)
         except json.JSONDecodeError:
             return {"year": 0, "semester": 0, "major": "", "minor": "", "interests": ""}
-    return {"year": 0, "semester": 0, "major": "", "minor": "", "interests": ""}
-
 
 # Chat endpoint to handle form submissions and feedback
 @app.post("/chat")
 async def chat(request: ChatRequest):
     # Convert messages to a format compatible with Ollama
-    message = request.messages[0].json()
-    # message = {"role": message["role"], "content": message["Additional Info"]}
-    print("---", message)
+    message = request.messages[0]
     student_info = extract_student_info_from_message(message)
 
     course_summ_embed = torch.load("../../data/course_desc/course_summ_embed.pt")

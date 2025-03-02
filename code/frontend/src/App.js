@@ -8,8 +8,8 @@ const App = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleFormSubmit = async (formattedMessage) => {
-    const userMessage = { role: 'user', content: formattedMessage };
+  const handleFormSubmit = async (formData) => {
+    const userMessage = { role: 'user', content: JSON.stringify(formData) };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
     await sendMessage([...messages, userMessage]);

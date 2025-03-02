@@ -39,7 +39,7 @@ const Form = ({ onSubmit }) => {
       interests: interests.map(i => i.value),
       additionalInfo: freeText || 'None'
     };
-    onSubmit(JSON.stringify(formData, null, 2));
+    onSubmit(formData);
   };
 
   return (
